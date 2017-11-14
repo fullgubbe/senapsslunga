@@ -2,45 +2,7 @@ pico-8 cartridge // http://www.pico-8.com
 version 8
 __lua__
 
--- display: 128x128, fixed 16 colour palette
--- input: 6 buttons
--- cartridge size: 32k
--- sound: 4 channel, 64 definable chip blerps
--- code: lua (max 8192 tokens of code) 
--- sprites: single bank of 128 8x8 sprites (+128 shared)
--- map: 128x32 8-bit cels (+128x32 shared)
-
--- 0x0    gfx
--- 0x1000 gfx2/map2 (shared)
--- 0x2000 map
--- 0x3000 gfx_props
--- 0x3100 song
--- 0x3200 sfx
--- 0x4300 user data
--- 0x5e00 persistent cart data (256 bytes)
--- 0x5f00 draw state
--- 0x5f40 hardware state
--- 0x5f80 gpio pins (128 bytes)
--- 0x6000 screen (8k)
 frame=0
-
-sin_x={}
-sin_y={}
-function init_plasma()
-	for i=0,511 do
-		sin_x[i] = sin(i / 63)*3 + 3
-		sin_y[i] = sin(i / 43)*2 + 2
-	end
-
-	local plasma_pal={ 0, 9, 10, 11, 12, 11, 10, 9, 3, 9, 10, 11, 12, 11, 10, 9, 3 }
-	for i=0,16 do
-		pal(i, plasma_pal[i])
-	end
-
-	-- Set borders to black here since we do not draw anything on them
-	rectfill(0,0,127,19,1)
-	rectfill(0,117,127,127,1)
-end
 
 function _init()
 	-- clear screen
