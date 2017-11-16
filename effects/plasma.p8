@@ -11,14 +11,13 @@ function init_plasma()
 		sin_y[i] = sin(i / 43)*2 + 2
 	end
 
-	local plasma_pal={ 0, 9, 10, 11, 12, 11, 10, 9, 3, 9, 10, 11, 12, 11, 10, 9, 3 }
-	for i=0,16 do
-		pal(i, plasma_pal[i])
-	end
+	-- local plasma_pal={ 0, 9, 10, 11, 12, 11, 10, 9, 3, 9, 10, 11, 12, 11, 10, 9, 3 }
+	-- for i=0,16 do
+-- 		pal(i, plasma_pal[i])
+-- 	end
 
 	-- Set borders to black here since we do not draw anything on them
-	rectfill(0,0,127,19,1)
-	rectfill(0,117,127,127,1)
+	rectfill(0,0,127,127,0)
 end
 
 function _init()
@@ -35,7 +34,7 @@ function debug_print(txt)
 end
 
 function _draw()
-	draw_plasma(0, 10, 127, 117)
+	draw_plasma(0, 40, 127, 87)
 end
 
 function draw_plasma(x0, y0, xw, yw)
