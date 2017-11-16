@@ -5,60 +5,88 @@ __lua__
 frame = 0
 palettes = {}
 cube = {}
-sin_x={}
-sin_y={}
-
+plasma_sin_x={}
+plasma_sin_y={}
 fade = 1
-
 currentscene=0
-scenestart = { 1, 100, 130, 340, 450 }
 lastscene=0
+scenestart = { 1 }
+
+-- length of scenes in frames
+scenelength = { 100,  -- starfield
+	        200,  -- twister 
+	        20,   -- twister fade out
+	        20,   -- 3d cube fade in
+	        260,  -- 3d cube
+	        100,  -- plasma + cube outline
+	        100   -- checkers
+	      }
+
 function _init()
 	init_palettes(palettes)	
 	init_3d()
 	init_plasma()
 
-	rectfill(0,0, 127, 127, 0)
-
 	set_palette(palettes[1], 0)
-	lastscene = count(scenestart)
+
+	-- calculate start times for scenes
+	local framepos = 0
+	for scene in all(scenelength) do
+		framepos += scene
+		add(scenestart, framepos)	
+	end
+	-- add empty end scene
+	add(scenestart, framepos+1)
+	lastscene = #scenestart
 end
 
 function _update()
 	frame += 1
 
 	if (currentscene != lastscene) then 
-	if (frame == scenestart[currentscene+1]) then
-		currentscene=5
-		-- currentscene+=1
-	end 
+		if (frame == scenestart[currentscene+1]) then
+			currentscene+=1
+
+			currentscene=6 -- set to force scene
+		end 
 	end
 end
 
 function _draw()
 	if (currentscene == 0) then
+		-- TODO: start music
+		rectfill(0,0, 127, 127, 0)
 	elseif (currentscene == 1) then
-		draw_twister(0, 0, 127, 127, 64+sin(frame/39+2)*10)
+		-- TODO: Placeholder
+		rectfill(0,0, 127, 127, 0)
+		print("Insert Steffes uberfont", 20, 50, 6)
+		print("and starfield AB", 20, 60, 6)
 	elseif (currentscene == 2) then
 		draw_twister(0, 0, 127, 127, 64+sin(frame/39+2)*10)
-		draw_fade()
 	elseif (currentscene == 3) then
-		set_palette(palettes[1], 1)
-		draw_3d(cube)
+		draw_twister(0, 0, 127, 127, 64+sin(frame/39+2)*10)
+		draw_fade_out()
 	elseif (currentscene == 4) then
+		draw_fade_in()
+		rectfill(0, 0, 127, 127, 0)
+		draw_3d(cube)
+	elseif (currentscene == 5) then
+		rectfill(0, 0, 127, 127, 0)
+		draw_3d(cube)
+	elseif (currentscene == 6) then
 		rectfill(0, 20, 127, 40, 0)
 		rectfill(0, 88, 127, 127, 0)
 		draw_plasma(0, 40, 127, 87)
-		draw_3d_wireframe(cube, 7)
-	elseif (currentscene == 5) then
-		-- end demo and music
+		cube:setposition(0, 0, -5)
+		draw_3d_outline(cube, 7)
+	elseif (currentscene == 7) then
 		set_palette(palettes[1], 1)
-		-- rectfill(0,0, 127, 127, 0)
-		-- map(4,3, 40, 40, 6, 3)
-
 		draw_checkers(0, 0, 127, 127, 6, 8)
+	elseif (currentscene == lastscene) then
+		-- end demo and music
+		-- rectfill(0,0, 127, 127, 0)
 	end
-	-- debug_print(currentscene)
+	debug_print(currentscene)
 end
 
 function debug_print(txt)
@@ -83,11 +111,20 @@ function set_palette(palette, ondisplay)
 	end
 end
 
-function draw_fade()
+function draw_fade_out()
 	if ((frame % 5) == 0) then
 		set_palette(palettes[fade], 1)
 		if (fade < 6) then
 			fade += 1
+		end
+	end
+end
+
+function draw_fade_in()
+	if ((frame % 5) == 0) then
+		set_palette(palettes[fade], 1)
+		if (fade > 1) then
+			fade -= 1
 		end
 	end
 end
@@ -106,7 +143,6 @@ twister_col1=5
 twister_col2=1
 twister_col3=2
 twister_col4=13
-twister_bg=6
 function draw_twister(x0, y0, xw, yw, offset)
 	local scale=21
 
@@ -149,21 +185,11 @@ function draw_twister(x0, y0, xw, yw, offset)
 	end
 end
 
-sin_x={}
-sin_y={}
 function init_plasma()
         for i=0,511 do
-                sin_x[i] = sin(i / 63)*3 + 3
-                sin_y[i] = sin(i / 43)*2 + 2
+                plasma_sin_x[i] = sin(i / 63)*3 + 3
+                plasma_sin_y[i] = sin(i / 43)*2 + 2
         end
-
-        -- local plasma_pal={ 0, 9, 10, 11, 12, 11, 10, 9, 3, 9, 10, 11, 12, 11, 10, 9, 3 }
-        -- for i=0,16 do
---              pal(i, plasma_pal[i])
---      end
-
-        -- Set borders to black here since we do not draw anything on them
-        rectfill(0,0,127,127,0)
 end
 
 function draw_plasma(x0, y0, xw, yw)
@@ -171,8 +197,8 @@ function draw_plasma(x0, y0, xw, yw)
 
         for x=x0,xw do
         for y=y0,yw do
-                local col1=sin_x[x+y]*2 + sin_y[y+t]*2 + 4
-                local col2=sin_y[x+t]*3 + sin_y[y*2] + 4
+                local col1=plasma_sin_x[x+y]*2 + plasma_sin_y[y+t]*2 + 4
+                local col2=plasma_sin_y[x+t]*3 + plasma_sin_y[y*2] + 4
                 local col=(col1 + col2) / 3
                 pset(x, y, col+1)
         end
@@ -181,8 +207,8 @@ end
 
 function init_3d()
 	-- create a cube
-        cube = new_object(0, 0, -5)
-        cube:setrotation(0.5, 0.5, 0)
+        cube = new_object(12, 22, -7)
+        cube:setrotation(0.8, 1.2, 0.3)
 	cube:addvertex(-1, 1, 1)
 	cube:addvertex(1, 1, 1)
 	cube:addvertex(-1, -1, 1)
@@ -196,24 +222,21 @@ function init_3d()
 	cube_color2=8
 	cube_color3=7
 	cube_color4=10
-	cube_color5=3
-	cube_color6=4
+	cube_color5=11
+	cube_color6=6
 
-	cube:addface(1, 2, 3, cube_color1)
+	cube:addface(2, 1, 3, cube_color1) 
 	cube:addface(2, 3, 4, cube_color1)
 	cube:addface(2, 4, 7, cube_color2)
-	cube:addface(2, 6, 7, cube_color2)
-	cube:addface(1, 2, 5, cube_color3)
-	cube:addface(2, 5, 6, cube_color3)
-	cube:addface(3, 4, 8, cube_color4)
-	cube:addface(4, 7, 8, cube_color4)
-	cube:addface(1, 3, 8, cube_color5)
+	cube:addface(2, 7, 6, cube_color2)
+	cube:addface(1, 2, 5, cube_color3) 
+	cube:addface(2, 6, 5, cube_color3)
+	cube:addface(3, 8, 4, cube_color4)
+	cube:addface(4, 8, 7, cube_color4)
+	cube:addface(1, 8, 3, cube_color5)
 	cube:addface(1, 5, 8, cube_color5)
 	cube:addface(5, 6, 7, cube_color6)
 	cube:addface(5, 7, 8, cube_color6)
-	
-	-- clear screen
-	rectfill(0, 0, 127, 127, 0)
 end
 
 function new_object(pos_x, pos_y, pos_z)
@@ -229,6 +252,12 @@ function new_object(pos_x, pos_y, pos_z)
 
 		vertices = {},
 		faces = {},
+
+		setposition = function(self, x0, y0, z0)
+			self.x = x0
+			self.y = y0
+			self.z = z0
+		end,
 
 		addvertex = function(self, x0, y0, z0)
 			vertex = { x = x0, y = y0, z = z0 }
@@ -346,6 +375,10 @@ function new_object(pos_x, pos_y, pos_z)
 	return object
 end
 
+function ceil(n)
+	return flr(n+0x0.ffff)
+end
+
 function draw_triangle(point1, point2, point3, color)
 	p1 = { x = point1.x, y = point1.y, z = point1.z }
 	p2 = { x = point2.x, y = point2.y, z = point2.z }
@@ -411,7 +444,7 @@ function draw_triangle(point1, point2, point3, color)
 	end
 
 	if (dydx_p1p2 > dydx_p1p3) then
-		for y=p1.y,p3.y do
+		for y=ceil(p1.y),ceil(p3.y) do
 			if (y < p2.y) then
 				draw_scanline(y, p1, p3, p1, p2, color)
 			else
@@ -419,7 +452,7 @@ function draw_triangle(point1, point2, point3, color)
 			end
 		end
 	else
-		for y=p1.y,p3.y do
+		for y=ceil(p1.y),ceil(p3.y) do
 			if (y < p2.y) then
 				draw_scanline(y, p1, p2, p1, p3, color)
 			else
@@ -441,14 +474,30 @@ function draw_scanline(y, p1, p2, p3, endpoint, color)
 end
 
 function draw_3d(object)
-	-- clear screen
-	rectfill(0, 0, 127, 127, 0)
+	-- todo move out some of this from here
+	rectfill(0, 0, 127, 80, 2)
 
-	-- Draw 
+	circfill(26, 65, 17, 6)
+	line(0, 73, 127, 73, 14)
+	line(12, 73, 40, 73, 13)
+
+	line(0, 75, 127, 75, 14)
+	line(13, 75, 39, 75, 13)
+
+	line(0, 77, 127, 77, 8)
+	line(14, 77, 38, 77, 14)
+
+	line(0, 79, 127, 79, 8)
+	line(16, 79, 36, 79, 14)
+
+	line(0, 80, 127, 80, 1)
+	line(0, 81, 127, 81, 1)
+        line(0, 82, 127, 82, 0)
+	rectfill(0, 83, 127, 127, 1)
+
 	rot = object:rotationmatrix()
 
 	-- Draw faces
-	apa = 10
 	for face in all(object.faces) do
 		vertex1 = object.vertices[face.a]
 		vertex2 = object.vertices[face.b]
@@ -458,45 +507,49 @@ function draw_3d(object)
 		point2 = object:screencoords(vertex2, rot)
 		point3 = object:screencoords(vertex3, rot)
 
-		-- line(point1.x, point1.y, point2.x, point2.y, col1)
-		-- line(point2.x, point2.y, point3.x, point3.y, col1)
-		-- line(point3.x, point3.y, point1.x, point1.y, col1)
 		draw_triangle(point1, point2, point3, face.color)
-		ux = (point2.x - point1.x)
-		uy = (point2.y - point1.y)
-		vx = (point3.x - point1.x)
-		vy = (point3.y - point1.y)
-
-		nrm = (ux*vy)-(uy*vx)
-		print(nrm, 0, apa, face.color)
-		apa+=10
-
 	end
 
 	object:rotate()
+
+
+	set_palette(palettes[2], 0)
+	a = 0
+	for y=81,40,-1 do
+		for x=0,127 do
+			pset(x, 83+a+ plasma_sin_x[flr(frame%512/6)]*0.5+ plasma_sin_y[x]*0.5, pget(x, y))		
+		end
+		a += 1
+	end
+	set_palette(palettes[1], 0)
 end
 
-function draw_3d_wireframe(object, color)
-	-- clear screen
-	-- rectfill(0, 0, 127, 127, 0)
-
-	-- Draw 
+function draw_3d_outline(object, color)
 	rot = object:rotationmatrix()
 
-	-- Draw faces
-	for face in all(object.faces) do
-		vertex1 = object.vertices[face.a]
-		vertex2 = object.vertices[face.b]
-		vertex3 = object.vertices[face.c]
+	-- Draw cube outline
+	point1 = object:screencoords(object.vertices[1], rot)
+	point2 = object:screencoords(object.vertices[2], rot)
+	point3 = object:screencoords(object.vertices[3], rot)
+	point4 = object:screencoords(object.vertices[4], rot)
+	point5 = object:screencoords(object.vertices[5], rot)
+	point6 = object:screencoords(object.vertices[6], rot)
+	point7 = object:screencoords(object.vertices[7], rot)
+	point8 = object:screencoords(object.vertices[8], rot)
 
-		point1 = object:screencoords(vertex1, rot)
-		point2 = object:screencoords(vertex2, rot)
-		point3 = object:screencoords(vertex3, rot)
+	line(point1.x, point1.y, point2.x, point2.y, color)
+	line(point1.x, point1.y, point3.x, point3.y, color)
+	line(point1.x, point1.y, point5.x, point5.y, color)
+	line(point5.x, point5.y, point6.x, point6.y, color)
+	line(point5.x, point5.y, point8.x, point8.y, color)
+	line(point6.x, point6.y, point2.x, point2.y, color)
+	line(point6.x, point6.y, point7.x, point7.y, color)
+	line(point7.x, point7.y, point8.x, point8.y, color)
+	line(point7.x, point7.y, point4.x, point4.y, color)
 
-		line(point1.x, point1.y, point2.x, point2.y, color)
-		line(point2.x, point2.y, point3.x, point3.y, color)
-		line(point3.x, point3.y, point1.x, point1.y, color)
-	end
+	line(point4.x, point4.y, point2.x, point2.y, color)
+	line(point4.x, point4.y, point3.x, point3.y, color)
+	line(point3.x, point3.y, point8.x, point8.y, color)
 
 	object:rotate()
 end
